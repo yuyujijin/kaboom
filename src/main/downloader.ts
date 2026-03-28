@@ -3,11 +3,20 @@ import { createWriteStream, mkdirSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
 import { app } from 'electron'
-import ffmpegPath from 'ffmpeg-static'
 import type { DownloadProgress } from '../shared/types'
 
 // Browser to use for cookie extraction — change this to 'firefox', 'safari', etc.
 const COOKIES_BROWSER = 'chrome'
+
+function getFfmpegPath(): string {
+  const binary = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+
+  if (app.isPackaged) {
+    return join(process.resourcesPath, binary)
+  }
+
+  return join(app.getAppPath(), 'node_modules', 'ffmpeg-static', binary)
+}
 
 function getYtDlpPath(): string {
   const binary = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
@@ -39,7 +48,7 @@ export function download(
 
     const args = [
       '--cookies-from-browser', COOKIES_BROWSER,
-      '--ffmpeg-location', ffmpegPath!,
+      '--ffmpeg-location', getFfmpegPath(),
       '-f', 'bestaudio',
       '-x',
       '--audio-format', 'flac',
