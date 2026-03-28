@@ -50,7 +50,17 @@ function App() {
       <button onClick={handleDownload} disabled={loading || !url.trim()}>
         {loading ? 'Downloading...' : 'Download'}
       </button>
-      {status && <p>{status.message}</p>}
+      {status && (
+        <div>
+          {status.total != null && (
+            <p>Track {status.current} of {status.total}</p>
+          )}
+          {status.percent != null && (
+            <progress value={status.percent} max={100} style={{ width: '100%' }} />
+          )}
+          <p>{status.message}</p>
+        </div>
+      )}
     </div>
   )
 }
