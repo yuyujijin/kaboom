@@ -1,0 +1,20 @@
+{
+  "name": "kaboom",
+  "version": "0.0.1",
+  "description": "",
+  "homepage": "https://github.com/yuyujijin/kaboom#readme",
+  "bugs": {
+    "url": "https://github.com/yuyujijin/kaboom/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuyujijin/kaboom.git"
+  },
+  "license": "MIT",
+  "author": "Eugène Valty",
+  "type": "typescript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
