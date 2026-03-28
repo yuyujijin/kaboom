@@ -8,6 +8,9 @@ import type { DownloadProgress } from '../shared/types'
 // Browser to use for cookie extraction — change this to 'firefox', 'safari', etc.
 const COOKIES_BROWSER = 'chrome'
 
+const RETRY_MAX = 5
+const RETRY_SLEEP_SECONDS = 600 // 10 minutes
+
 // Structured progress line emitted by yt-dlp via --progress-template
 const PROGRESS_PREFIX = 'kaboom-progress:'
 
@@ -71,6 +74,9 @@ export function download(
       '-f', 'bestaudio',
       '-x',
       '--audio-format', 'flac',
+      '--retries', String(RETRY_MAX),
+      '--extractor-retries', String(RETRY_MAX),
+      '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,
       '--newline',
       '--progress-template', PROGRESS_TEMPLATE,
       '-o', join(outputDir, '%(title)s.%(ext)s'),
@@ -78,6 +84,11 @@ export function download(
     ]
 
     const proc = spawn(ytDlpPath, args)
+
+    let rateLimitedAt: number | undefined
+    let retryAttempt: number | undefined
+
+    const retryRe = /Retrying \(attempt (\d+) of (\d+)\)/
 
     proc.stdout.on('data', (data: Buffer) => {
       for (const line of data.toString().split('\n')) {
@@ -98,6 +109,9 @@ export function download(
             current: raw.current > 0 ? raw.current : undefined,
             total: raw.totalTracks > 0 ? raw.totalTracks : undefined,
             percent,
+            rateLimitedAt,
+            retryAttempt,
+            maxRetries: RETRY_MAX,
           })
         } catch {
           // malformed progress line — ignore
@@ -106,9 +120,29 @@ export function download(
     })
 
     proc.stderr.on('data', (data: Buffer) => {
-      const message = data.toString().trim()
-      logStream.write(`[stderr] ${message}\n`)
-      onProgress({ status: 'downloading', message })
+      for (const line of data.toString().split('\n')) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+
+        logStream.write(`[stderr] ${trimmed}\n`)
+
+        if (/429|Too Many Requests/i.test(trimmed)) {
+          rateLimitedAt = Date.now()
+        }
+
+        const retryMatch = retryRe.exec(trimmed)
+        if (retryMatch) {
+          retryAttempt = parseInt(retryMatch[1], 10)
+        }
+
+        onProgress({
+          status: 'downloading',
+          message: trimmed,
+          rateLimitedAt,
+          retryAttempt,
+          maxRetries: RETRY_MAX,
+        })
+      }
     })
 
     proc.on('close', (code) => {

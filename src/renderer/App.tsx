@@ -58,6 +58,12 @@ function App() {
           {status.percent != null && (
             <progress value={status.percent} max={100} style={{ width: '100%' }} />
           )}
+          {status.rateLimitedAt != null && (
+            <p>Rate limited at {new Date(status.rateLimitedAt).toLocaleTimeString()}</p>
+          )}
+          {status.retryAttempt != null && (
+            <p>Retry {status.retryAttempt} / {status.maxRetries}</p>
+          )}
           <p>{status.message}</p>
         </div>
       )}
