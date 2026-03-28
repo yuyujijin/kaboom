@@ -1,12 +1,9 @@
 import { spawn } from 'child_process'
-import { createWriteStream, mkdirSync } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, symlinkSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
 import { app } from 'electron'
-import type { DownloadProgress } from '../shared/types'
-
-// Browser to use for cookie extraction — change this to 'firefox', 'safari', etc.
-const COOKIES_BROWSER = 'chrome'
+import type { CookiesBrowser, DownloadProgress } from '../shared/types'
 
 const RETRY_MAX = 5
 const RETRY_SLEEP_SECONDS = 600 // 10 minutes
@@ -30,14 +27,34 @@ interface YtDlpProgress {
   totalTracks: number
 }
 
-function getFfmpegPath(): string {
-  const binary = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-
+// Returns a directory containing both ffmpeg and ffprobe, as yt-dlp requires.
+// In dev: symlinks both binaries into a shared temp dir.
+// When packaged: assumes both are bundled in resourcesPath.
+function getToolsDir(): string {
   if (app.isPackaged) {
-    return join(process.resourcesPath, binary)
+    return process.resourcesPath
   }
 
-  return join(app.getAppPath(), 'node_modules', 'ffmpeg-static', binary)
+  const ext = process.platform === 'win32' ? '.exe' : ''
+  const dir = join(app.getPath('temp'), 'kaboom-tools')
+  mkdirSync(dir, { recursive: true })
+
+  const link = (src: string, name: string) => {
+    const dest = join(dir, name)
+    if (!existsSync(dest)) symlinkSync(src, dest)
+  }
+
+  link(
+    join(app.getAppPath(), 'node_modules', 'ffmpeg-static', `ffmpeg${ext}`),
+    `ffmpeg${ext}`
+  )
+  link(
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    (require('ffprobe-static') as { path: string }).path,
+    `ffprobe${ext}`
+  )
+
+  return dir
 }
 
 function getYtDlpPath(): string {
@@ -59,6 +76,7 @@ function createLogStream() {
 
 export function download(
   url: string,
+  browser: CookiesBrowser,
   onProgress: (progress: DownloadProgress) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -69,11 +87,11 @@ export function download(
     console.log(`yt-dlp log: ${logPath}`)
 
     const args = [
-      '--cookies-from-browser', COOKIES_BROWSER,
-      '--ffmpeg-location', getFfmpegPath(),
+      '--cookies-from-browser', browser,
+      '--ffmpeg-location', getToolsDir(),
       '-f', 'bestaudio',
       '-x',
-      '--audio-format', 'flac',
+      '--audio-format', 'mp3',
       '--retries', String(RETRY_MAX),
       '--extractor-retries', String(RETRY_MAX),
       '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,
@@ -87,8 +105,10 @@ export function download(
 
     let rateLimitedAt: number | undefined
     let retryAttempt: number | undefined
+    let warning: string | undefined
 
     const retryRe = /Retrying \(attempt (\d+) of (\d+)\)/
+    const credentialsRe = /Original download format is only available for registered users/
 
     proc.stdout.on('data', (data: Buffer) => {
       for (const line of data.toString().split('\n')) {
@@ -112,6 +132,7 @@ export function download(
             rateLimitedAt,
             retryAttempt,
             maxRetries: RETRY_MAX,
+            warning,
           })
         } catch {
           // malformed progress line — ignore
@@ -135,12 +156,17 @@ export function download(
           retryAttempt = parseInt(retryMatch[1], 10)
         }
 
+        if (credentialsRe.test(trimmed)) {
+          warning = 'Not logged in to SoundCloud — downloading at lower quality'
+        }
+
         onProgress({
           status: 'downloading',
           message: trimmed,
           rateLimitedAt,
           retryAttempt,
           maxRetries: RETRY_MAX,
+          warning,
         })
       }
     })

@@ -1,3 +1,6 @@
+export type CookiesBrowser = 'chrome' | 'firefox' | 'safari' | 'edge' | 'brave' | 'chromium' | 'opera' | 'vivaldi'
+
+
 export interface DownloadProgress {
   status: 'downloading' | 'done' | 'error'
   message: string
@@ -13,4 +16,6 @@ export interface DownloadProgress {
   retryAttempt?: number
   /** Max configured retries */
   maxRetries?: number
+  /** Non-fatal warning to surface in the UI (e.g. missing credentials) */
+  warning?: string
 }

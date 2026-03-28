@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DownloadProgress } from '../shared/types'
+import type { CookiesBrowser, DownloadProgress } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
-  download: (url: string): Promise<void> => ipcRenderer.invoke('download', url),
+  download: (url: string, browser: CookiesBrowser): Promise<void> => ipcRenderer.invoke('download', url, browser),
 
   onProgress: (callback: (progress: DownloadProgress) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, progress: DownloadProgress) => callback(progress)

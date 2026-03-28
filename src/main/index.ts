@@ -25,8 +25,8 @@ function createWindow(): BrowserWindow {
 app.whenReady().then(() => {
   const win = createWindow()
 
-  ipcMain.handle('download', async (_, url: string) => {
-    return download(url, (progress) => {
+  ipcMain.handle('download', async (_, url: string, browser: import('../shared/types').CookiesBrowser) => {
+    return download(url, browser, (progress) => {
       win.webContents.send('download:progress', progress)
     })
   })

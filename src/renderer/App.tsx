@@ -1,17 +1,20 @@
-import React, { useState } from 'react'
-import type { DownloadProgress } from '../shared/types'
+import { useState } from 'react'
+import type { CookiesBrowser, DownloadProgress } from '../shared/types'
 
 declare global {
   interface Window {
     api: {
-      download: (url: string) => Promise<void>
+      download: (url: string, browser: CookiesBrowser) => Promise<void>
       onProgress: (callback: (progress: DownloadProgress) => void) => () => void
     }
   }
 }
 
+const BROWSERS: CookiesBrowser[] = ['chrome', 'firefox', 'safari', 'edge', 'brave', 'chromium', 'opera', 'vivaldi']
+
 function App() {
   const [url, setUrl] = useState('')
+  const [browser, setBrowser] = useState<CookiesBrowser>('chrome')
   const [status, setStatus] = useState<DownloadProgress | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -30,7 +33,7 @@ function App() {
     })
 
     try {
-      await window.api.download(url)
+      await window.api.download(url, browser)
     } catch {
       setLoading(false)
       cleanup()
@@ -39,6 +42,13 @@ function App() {
 
   return (
     <div>
+      <select
+        value={browser}
+        onChange={(e) => setBrowser(e.target.value as CookiesBrowser)}
+        disabled={loading}
+      >
+        {BROWSERS.map((b) => <option key={b} value={b}>{b}</option>)}
+      </select>
       <input
         type="text"
         value={url}
@@ -57,6 +67,9 @@ function App() {
           )}
           {status.percent != null && (
             <progress value={status.percent} max={100} style={{ width: '100%' }} />
+          )}
+          {status.warning != null && (
+            <p style={{ color: 'orange' }}>{status.warning}</p>
           )}
           {status.rateLimitedAt != null && (
             <p>Rate limited at {new Date(status.rateLimitedAt).toLocaleTimeString()}</p>
