@@ -1,7 +1,9 @@
 import { spawn } from 'child_process'
+import { createWriteStream, mkdirSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
 import { app } from 'electron'
+import ffmpegPath from 'ffmpeg-static'
 import type { DownloadProgress } from '../shared/types'
 
 // Browser to use for cookie extraction — change this to 'firefox', 'safari', etc.
@@ -17,6 +19,13 @@ function getYtDlpPath(): string {
   return join(app.getAppPath(), 'resources', binary)
 }
 
+function createLogStream() {
+  const logDir = join(app.getPath('logs'), 'kaboom')
+  mkdirSync(logDir, { recursive: true })
+  const logPath = join(logDir, `download-${Date.now()}.log`)
+  return { stream: createWriteStream(logPath), logPath }
+}
+
 export function download(
   url: string,
   onProgress: (progress: DownloadProgress) => void
@@ -24,11 +33,16 @@ export function download(
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath()
     const outputDir = join(homedir(), 'Music')
+    const { stream: logStream, logPath } = createLogStream()
+
+    console.log(`yt-dlp log: ${logPath}`)
 
     const args = [
       '--cookies-from-browser', COOKIES_BROWSER,
+      '--ffmpeg-location', ffmpegPath!,
+      '-f', 'bestaudio',
       '-x',
-      '--audio-format', 'mp3',
+      '--audio-format', 'flac',
       '-o', join(outputDir, '%(title)s.%(ext)s'),
       url
     ]
@@ -36,14 +50,20 @@ export function download(
     const proc = spawn(ytDlpPath, args)
 
     proc.stdout.on('data', (data: Buffer) => {
-      onProgress({ status: 'downloading', message: data.toString().trim() })
+      const message = data.toString().trim()
+      logStream.write(`[stdout] ${message}\n`)
+      onProgress({ status: 'downloading', message })
     })
 
     proc.stderr.on('data', (data: Buffer) => {
-      onProgress({ status: 'downloading', message: data.toString().trim() })
+      const message = data.toString().trim()
+      logStream.write(`[stderr] ${message}\n`)
+      onProgress({ status: 'downloading', message })
     })
 
     proc.on('close', (code) => {
+      logStream.write(`[exit] code ${code}\n`)
+      logStream.end()
       if (code === 0) {
         onProgress({ status: 'done', message: 'Download complete' })
         resolve()
@@ -55,6 +75,8 @@ export function download(
     })
 
     proc.on('error', (err) => {
+      logStream.write(`[error] ${err.message}\n`)
+      logStream.end()
       onProgress({ status: 'error', message: err.message })
       reject(err)
     })
