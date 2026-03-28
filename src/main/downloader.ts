@@ -104,6 +104,7 @@ export function download(
       '--retries', String(RETRY_MAX),
       '--extractor-retries', String(RETRY_MAX),
       '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,
+      '--retry-sleep', `extractor:${RETRY_SLEEP_SECONDS}`,
       '--embed-metadata',
       '--embed-thumbnail',
       '--print', TRACK_PRINT_TEMPLATE,
