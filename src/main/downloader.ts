@@ -1,7 +1,6 @@
 import { spawn } from 'child_process'
 import { createWriteStream, existsSync, mkdirSync, symlinkSync } from 'fs'
 import { join } from 'path'
-import { homedir } from 'os'
 import { app } from 'electron'
 import type { CookiesBrowser, DownloadProgress } from '../shared/types'
 
@@ -77,11 +76,11 @@ function createLogStream() {
 export function download(
   url: string,
   browser: CookiesBrowser,
+  outputDir: string,
   onProgress: (progress: DownloadProgress) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath()
-    const outputDir = join(homedir(), 'Music')
     const { stream: logStream, logPath } = createLogStream()
 
     console.log(`yt-dlp log: ${logPath}`)

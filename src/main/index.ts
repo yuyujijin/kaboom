@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { join } from 'path'
 import { download } from './downloader'
 
@@ -26,7 +26,13 @@ app.whenReady().then(() => {
   const win = createWindow()
 
   ipcMain.handle('download', async (_, url: string, browser: import('../shared/types').CookiesBrowser) => {
-    return download(url, browser, (progress) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      title: 'Choose download folder',
+      properties: ['openDirectory', 'createDirectory'],
+    })
+    if (canceled || filePaths.length === 0) return
+
+    return download(url, browser, filePaths[0], (progress) => {
       win.webContents.send('download:progress', progress)
     })
   })
