@@ -12,9 +12,10 @@
   },
   "license": "MIT",
   "author": "Eugène Valty",
-  "type": "typescript",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/main.ts",
   "scripts": {
+    "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
