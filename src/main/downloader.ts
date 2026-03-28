@@ -2,7 +2,7 @@ import { spawn } from 'child_process'
 import { createWriteStream, existsSync, mkdirSync, symlinkSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import type { CookiesBrowser, DownloadProgress } from '../shared/types'
+import type { CookiesBrowser, DownloadProgress, TrackInfo } from '../shared/types'
 
 const RETRY_MAX = 5
 const RETRY_SLEEP_SECONDS = 600 // 10 minutes
@@ -16,6 +16,16 @@ const PROGRESS_TEMPLATE =
   `"total":%(progress.total_bytes|0)s,` +
   `"current":%(info.playlist_index|0)s,` +
   `"totalTracks":%(info.n_entries|0)s}`
+
+// Track metadata line emitted by yt-dlp via --print
+const TRACK_PREFIX = 'kaboom-track:'
+
+const TRACK_PRINT_TEMPLATE =
+  `${TRACK_PREFIX}` +
+  `{"title":%(title)j,` +
+  `"author":%(uploader)j,` +
+  `"duration":%(duration|0)s,` +
+  `"thumbnail":%(thumbnail)j}`
 
 interface YtDlpProgress {
   downloaded: number
@@ -94,6 +104,9 @@ export function download(
       '--retries', String(RETRY_MAX),
       '--extractor-retries', String(RETRY_MAX),
       '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,
+      '--embed-metadata',
+      '--embed-thumbnail',
+      '--print', TRACK_PRINT_TEMPLATE,
       '--newline',
       '--progress-template', PROGRESS_TEMPLATE,
       '-o', join(outputDir, '%(title)s.%(ext)s'),
@@ -115,6 +128,16 @@ export function download(
         if (!trimmed) continue
 
         logStream.write(`[stdout] ${trimmed}\n`)
+
+        if (trimmed.startsWith(TRACK_PREFIX)) {
+          try {
+            const trackInfo: TrackInfo = JSON.parse(trimmed.slice(TRACK_PREFIX.length))
+            onProgress({ status: 'downloading', message: trimmed, trackInfo })
+          } catch {
+            // malformed track line — ignore
+          }
+          continue
+        }
 
         if (!trimmed.startsWith(PROGRESS_PREFIX)) continue
 

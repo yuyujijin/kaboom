@@ -1,5 +1,13 @@
 export type CookiesBrowser = 'chrome' | 'firefox' | 'safari' | 'edge' | 'brave' | 'chromium' | 'opera' | 'vivaldi'
 
+export interface TrackInfo {
+  title: string
+  author: string
+  /** Duration in seconds */
+  duration: number
+  /** Thumbnail URL (may be empty string if unavailable) */
+  thumbnail: string
+}
 
 export interface DownloadProgress {
   status: 'downloading' | 'done' | 'error'
@@ -18,4 +26,6 @@ export interface DownloadProgress {
   maxRetries?: number
   /** Non-fatal warning to surface in the UI (e.g. missing credentials) */
   warning?: string
+  /** Metadata for the track that is about to be downloaded */
+  trackInfo?: TrackInfo
 }

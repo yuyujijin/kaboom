@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CookiesBrowser, DownloadProgress } from '../shared/types'
+import type { CookiesBrowser, DownloadProgress, TrackInfo } from '../shared/types'
 
 declare global {
   interface Window {
@@ -12,11 +12,18 @@ declare global {
 
 const BROWSERS: CookiesBrowser[] = ['chrome', 'firefox', 'safari', 'edge', 'brave', 'chromium', 'opera', 'vivaldi']
 
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 function App() {
   const [url, setUrl] = useState('')
   const [browser, setBrowser] = useState<CookiesBrowser>('chrome')
   const [status, setStatus] = useState<DownloadProgress | null>(null)
   const [loading, setLoading] = useState(false)
+  const [tracks, setTracks] = useState<TrackInfo[]>([])
 
   const handleDownload = async () => {
     if (!url.trim() || loading) return
@@ -25,6 +32,9 @@ function App() {
     setStatus(null)
 
     const cleanup = window.api.onProgress((progress) => {
+      if (progress.trackInfo) {
+        setTracks((prev) => [...prev, progress.trackInfo!])
+      }
       setStatus(progress)
       if (progress.status === 'done' || progress.status === 'error') {
         setLoading(false)
@@ -60,6 +70,21 @@ function App() {
       <button onClick={handleDownload} disabled={loading || !url.trim()}>
         {loading ? 'Downloading...' : 'Download'}
       </button>
+      {tracks.length > 0 && (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0' }}>
+          {tracks.map((track, i) => (
+            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #333' }}>
+              {track.thumbnail && (
+                <img src={track.thumbnail} alt="" width={48} height={48} style={{ objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
+                <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{track.author} · {formatDuration(track.duration)}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {status && (
         <div>
           {status.total != null && (
