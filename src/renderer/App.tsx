@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import type { CookiesBrowser, DownloadProgress, TrackInfo } from '../shared/types'
+import { DownloadForm } from './components/download/DownloadForm'
+import { DownloadStatus } from './components/download/DownloadStatus'
+import { TrackList } from './components/track/TrackList'
 
 declare global {
   interface Window {
@@ -8,14 +11,6 @@ declare global {
       onProgress: (callback: (progress: DownloadProgress) => void) => () => void
     }
   }
-}
-
-const BROWSERS: CookiesBrowser[] = ['chrome', 'firefox', 'safari', 'edge', 'brave', 'chromium', 'opera', 'vivaldi']
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 function App() {
@@ -30,6 +25,7 @@ function App() {
 
     setLoading(true)
     setStatus(null)
+    setTracks([])
 
     const cleanup = window.api.onProgress((progress) => {
       if (progress.trackInfo) {
@@ -50,61 +46,28 @@ function App() {
     }
   }
 
+  const showStatus = status != null && (loading || status.status === 'error')
+
   return (
-    <div>
-      <select
-        value={browser}
-        onChange={(e) => setBrowser(e.target.value as CookiesBrowser)}
-        disabled={loading}
-      >
-        {BROWSERS.map((b) => <option key={b} value={b}>{b}</option>)}
-      </select>
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleDownload()}
-        placeholder="SoundCloud URL"
-        disabled={loading}
-      />
-      <button onClick={handleDownload} disabled={loading || !url.trim()}>
-        {loading ? 'Downloading...' : 'Download'}
-      </button>
-      {tracks.length > 0 && (
-        <ul style={{ listStyle: 'none', padding: 0, margin: '16px 0' }}>
-          {tracks.map((track, i) => (
-            <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #333' }}>
-              {track.thumbnail && (
-                <img src={track.thumbnail} alt="" width={48} height={48} style={{ objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
-                <div style={{ fontSize: '0.85em', opacity: 0.7 }}>{track.author} · {formatDuration(track.duration)}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      {status && (
-        <div>
-          {status.total != null && (
-            <p>Track {status.current} of {status.total}</p>
-          )}
-          {status.percent != null && (
-            <progress value={status.percent} max={100} style={{ width: '100%' }} />
-          )}
-          {status.warning != null && (
-            <p style={{ color: 'orange' }}>{status.warning}</p>
-          )}
-          {status.rateLimitedAt != null && (
-            <p>Rate limited at {new Date(status.rateLimitedAt).toLocaleTimeString()}</p>
-          )}
-          {status.retryAttempt != null && (
-            <p>Retry {status.retryAttempt} / {status.maxRetries}</p>
-          )}
-          <p>{status.message}</p>
-        </div>
-      )}
+    <div className="flex min-h-screen flex-col items-center bg-background text-foreground">
+      {/* Top section — form + status */}
+      <div className="w-full max-w-2xl px-6 pt-12 pb-8 space-y-4">
+        <h1 className="text-center text-2xl font-bold tracking-tight">Kaboom</h1>
+        <DownloadForm
+          url={url}
+          browser={browser}
+          loading={loading}
+          onUrlChange={setUrl}
+          onBrowserChange={setBrowser}
+          onSubmit={handleDownload}
+        />
+        {showStatus && <DownloadStatus status={status} />}
+      </div>
+
+      {/* Downloaded tracks */}
+      <div className="w-full max-w-2xl px-6 pb-8">
+        <TrackList tracks={tracks} />
+      </div>
     </div>
   )
 }
