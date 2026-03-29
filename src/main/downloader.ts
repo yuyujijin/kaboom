@@ -109,8 +109,11 @@ export function download(
       '--embed-thumbnail',
       '--print', TRACK_PRINT_TEMPLATE,
       '--newline',
+      '--progress',
       '--progress-template', PROGRESS_TEMPLATE,
       '--force-ipv4',
+      '--no-simulate',
+      '--no-quiet',
       '-o', join(outputDir, '%(title)s.%(ext)s'),
       url
     ]
@@ -145,7 +148,7 @@ export function download(
 
         try {
           const raw: YtDlpProgress = JSON.parse(trimmed.slice(PROGRESS_PREFIX.length))
-          const percent = raw.total > 0 ? (raw.downloaded / raw.total) * 100 : undefined
+          const percent = raw.total ? (raw.downloaded / raw.total) * 100 : 0
 
           onProgress({
             status: 'downloading',

@@ -7,8 +7,9 @@ import { TrackList } from './components/track/TrackList'
 declare global {
   interface Window {
     api: {
-      download: (url: string, browser: CookiesBrowser) => Promise<void>
+      download: (url: string, browser: CookiesBrowser) => Promise<string | undefined>
       onProgress: (callback: (progress: DownloadProgress) => void) => () => void
+      openFolder: (path: string) => Promise<void>
     }
   }
 }
@@ -18,7 +19,8 @@ function App() {
   const [browser, setBrowser] = useState<CookiesBrowser>('chrome')
   const [status, setStatus] = useState<DownloadProgress | null>(null)
   const [loading, setLoading] = useState(false)
-  const [tracks, setTracks] = useState<TrackInfo[]>([])
+  const [tracks, setTracks] = useState<{ info: TrackInfo; percent?: number }[]>([])
+  const [outputDir, setOutputDir] = useState<string | null>(null)
 
   const handleDownload = async () => {
     if (!url.trim() || loading) return
@@ -29,7 +31,12 @@ function App() {
 
     const cleanup = window.api.onProgress((progress) => {
       if (progress.trackInfo) {
-        setTracks((prev) => [...prev, progress.trackInfo!])
+        setTracks((prev) => [...prev, { info: progress.trackInfo! }])
+      } else if (progress.percent != null) {
+        const idx = progress.current && progress.current > 0 ? progress.current - 1 : 0
+        setTracks((prev) =>
+          prev.map((t, i) => (i === idx ? { ...t, percent: progress.percent } : t))
+        )
       }
       setStatus(progress)
       if (progress.status === 'done' || progress.status === 'error') {
@@ -39,7 +46,8 @@ function App() {
     })
 
     try {
-      await window.api.download(url, browser)
+      const dir = await window.api.download(url, browser)
+      if (dir) setOutputDir(dir)
     } catch {
       setLoading(false)
       cleanup()
@@ -61,12 +69,21 @@ function App() {
           onBrowserChange={setBrowser}
           onSubmit={handleDownload}
         />
+        {outputDir && (
+          <button
+            onClick={() => window.api.openFolder(outputDir)}
+            className="w-full flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+          >
+            <span className="shrink-0">📁</span>
+            <span className="truncate">{outputDir}</span>
+          </button>
+        )}
         {showStatus && <DownloadStatus status={status} />}
       </div>
 
       {/* Scrollable track list */}
       <div className="w-full max-w-2xl flex-1 overflow-y-auto px-6 pb-8">
-        <TrackList tracks={tracks} />
+        <TrackList tracks={tracks} allDone={status?.status === 'done'} />
       </div>
     </div>
   )

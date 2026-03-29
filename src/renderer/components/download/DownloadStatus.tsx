@@ -9,8 +9,6 @@ interface DownloadStatusProps {
 export function DownloadStatus({ status }: DownloadStatusProps) {
   const isRateLimited = status.rateLimitedAt != null
 
-  console.log(status);
-
   return (
     <div className="w-full space-y-3">
       {/* Track counter for playlists */}
@@ -24,7 +22,7 @@ export function DownloadStatus({ status }: DownloadStatusProps) {
       {status.percent != null && (
         <div className="w-full bg-secondary rounded-full h-1">
           <div
-            className="bg-primary h-1 rounded-full transition-all duration-300"
+            className="bg-primary h-1 rounded-full"
             style={{ width: `${status.percent}%` }}
           />
         </div>

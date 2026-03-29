@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { download } from './downloader'
 
@@ -34,10 +34,13 @@ app.whenReady().then(() => {
     })
     if (canceled || filePaths.length === 0) return
 
-    return download(url, browser, filePaths[0], (progress) => {
+    await download(url, browser, filePaths[0], (progress) => {
       win.webContents.send('download:progress', progress)
     })
+    return filePaths[0]
   })
+
+  ipcMain.handle('open-folder', (_, path: string) => shell.openPath(path))
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
