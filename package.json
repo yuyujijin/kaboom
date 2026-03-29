@@ -25,6 +25,7 @@
   "build": {
     "appId": "com.eugenevalty.kaboom",
     "productName": "Kaboom",
+    "icon": "build/icon.png",
     "files": [
       "out/**/*",
       "package.json"
