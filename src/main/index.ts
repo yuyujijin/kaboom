@@ -5,7 +5,7 @@ import { download } from './downloader'
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
-    width: 800,
+    width: 750,
     height: 600,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -16,7 +16,6 @@ function createWindow(): BrowserWindow {
 
 
   if (process.env.NODE_ENV === 'development') {
-    win.webContents.openDevTools();
     win.loadURL(process.env['ELECTRON_RENDERER_URL']!)
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))
