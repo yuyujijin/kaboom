@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { CookiesBrowser, DownloadProgress, TrackInfo } from '../shared/types'
+import { NoiseOverlay } from './components/ui/NoiseOverlay'
+import { OrangeGlow } from './components/ui/OrangeGlow'
 import { DownloadForm } from './components/download/DownloadForm'
 import { DownloadStatus } from './components/download/DownloadStatus'
 import { RateLimitAlert } from './components/download/RateLimitAlert'
@@ -75,7 +77,9 @@ function App() {
   const showStatus = status != null && (loading || status.status === 'error')
 
   return (
-    <div className="flex h-screen flex-col items-center bg-background text-foreground">
+    <div className="relative flex h-screen flex-col items-center bg-background text-foreground overflow-hidden">
+      <OrangeGlow />
+      <NoiseOverlay />
       {/* Sticky top section — form + status */}
       <div className="w-full max-w-2xl px-6 pt-12 pb-8 space-y-4 shrink-0">
         <h1 className="text-center text-2xl font-bold tracking-tight">Kaboom</h1>
