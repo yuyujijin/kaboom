@@ -87,20 +87,25 @@ export function download(
   url: string,
   browser: CookiesBrowser,
   outputDir: string,
-  onProgress: (progress: DownloadProgress) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const ytDlpPath = getYtDlpPath()
-    const { stream: logStream, logPath } = createLogStream()
+  onProgress: (progress: DownloadProgress) => void,
+  onLogLine?: (line: string) => void
+): { promise: Promise<void>; logPath: string } {
+  const { stream: logStream, logPath } = createLogStream()
 
-    console.log(`yt-dlp log: ${logPath}`)
+  const writeLine = (line: string) => {
+    logStream.write(`${line}\n`)
+    onLogLine?.(line)
+  }
+
+  const promise = new Promise<void>((resolve, reject) => {
+    const ytDlpPath = getYtDlpPath()
 
     const args = [
       '--cookies-from-browser', browser,
       '--ffmpeg-location', getToolsDir(),
       '-f', 'bestaudio',
       '-x',
-      '--audio-format', 'mp3',
+      '--audio-format', 'aiff',
       '--retries', String(RETRY_MAX),
       '--extractor-retries', String(RETRY_MAX),
       '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,
@@ -109,7 +114,11 @@ export function download(
       '--embed-thumbnail',
       '--print', TRACK_PRINT_TEMPLATE,
       '--newline',
+      '--progress',
       '--progress-template', PROGRESS_TEMPLATE,
+      '--force-ipv4',
+      '--no-simulate',
+      '--no-quiet',
       '-o', join(outputDir, '%(title)s.%(ext)s'),
       url
     ]
@@ -120,7 +129,7 @@ export function download(
     let retryAttempt: number | undefined
     let warning: string | undefined
 
-    const retryRe = /Retrying \(attempt (\d+) of (\d+)\)/
+    const retryRe = /Retrying \((\d+)\/(\d+)\)/
     const credentialsRe = /Original download format is only available for registered users/
 
     proc.stdout.on('data', (data: Buffer) => {
@@ -128,7 +137,7 @@ export function download(
         const trimmed = line.trim()
         if (!trimmed) continue
 
-        logStream.write(`[stdout] ${trimmed}\n`)
+        writeLine(`[stdout] ${trimmed}`)
 
         if (trimmed.startsWith(TRACK_PREFIX)) {
           try {
@@ -144,7 +153,7 @@ export function download(
 
         try {
           const raw: YtDlpProgress = JSON.parse(trimmed.slice(PROGRESS_PREFIX.length))
-          const percent = raw.total > 0 ? (raw.downloaded / raw.total) * 100 : undefined
+          const percent = raw.total ? (raw.downloaded / raw.total) * 100 : 0
 
           onProgress({
             status: 'downloading',
@@ -168,7 +177,7 @@ export function download(
         const trimmed = line.trim()
         if (!trimmed) continue
 
-        logStream.write(`[stderr] ${trimmed}\n`)
+        writeLine(`[stderr] ${trimmed}`)
 
         if (/429|Too Many Requests/i.test(trimmed)) {
           rateLimitedAt = Date.now()
@@ -195,7 +204,7 @@ export function download(
     })
 
     proc.on('close', (code) => {
-      logStream.write(`[exit] code ${code}\n`)
+      writeLine(`[exit] code ${code}`)
       logStream.end()
       if (code === 0) {
         onProgress({ status: 'done', message: 'Download complete' })
@@ -208,10 +217,12 @@ export function download(
     })
 
     proc.on('error', (err) => {
-      logStream.write(`[error] ${err.message}\n`)
+      writeLine(`[error] ${err.message}`)
       logStream.end()
       onProgress({ status: 'error', message: err.message })
       reject(err)
     })
   })
+
+  return { promise, logPath }
 }
