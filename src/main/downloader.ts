@@ -105,7 +105,7 @@ export function download(
       '--ffmpeg-location', getToolsDir(),
       '-f', 'bestaudio',
       '-x',
-      '--audio-format', 'aiff',
+      '--audio-format', 'mp3',
       '--retries', String(RETRY_MAX),
       '--extractor-retries', String(RETRY_MAX),
       '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,
