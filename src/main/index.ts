@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
+import { readFile } from 'fs/promises'
 import { download } from './downloader'
 
 function createWindow(): BrowserWindow {
@@ -37,9 +38,20 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('download', async (_, url: string, browser: import('../shared/types').CookiesBrowser, dir: string) => {
-    await download(url, browser, dir, (progress) => {
-      win.webContents.send('download:progress', progress)
-    })
+    const { promise, logPath } = download(url, browser, dir,
+      (progress) => { win.webContents.send('download:progress', progress) },
+      (line) => { win.webContents.send('log:line', line) }
+    )
+    win.webContents.send('download:started', logPath)
+    await promise
+  })
+
+  ipcMain.handle('read-log', async (_, path: string) => {
+    try {
+      return await readFile(path, 'utf-8')
+    } catch {
+      return ''
+    }
   })
 
   ipcMain.handle('open-folder', (_, path: string) => shell.openPath(path))

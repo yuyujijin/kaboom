@@ -87,13 +87,18 @@ export function download(
   url: string,
   browser: CookiesBrowser,
   outputDir: string,
-  onProgress: (progress: DownloadProgress) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const ytDlpPath = getYtDlpPath()
-    const { stream: logStream, logPath } = createLogStream()
+  onProgress: (progress: DownloadProgress) => void,
+  onLogLine?: (line: string) => void
+): { promise: Promise<void>; logPath: string } {
+  const { stream: logStream, logPath } = createLogStream()
 
-    console.log(`yt-dlp log: ${logPath}`)
+  const writeLine = (line: string) => {
+    logStream.write(`${line}\n`)
+    onLogLine?.(line)
+  }
+
+  const promise = new Promise<void>((resolve, reject) => {
+    const ytDlpPath = getYtDlpPath()
 
     const args = [
       '--cookies-from-browser', browser,
@@ -132,7 +137,7 @@ export function download(
         const trimmed = line.trim()
         if (!trimmed) continue
 
-        logStream.write(`[stdout] ${trimmed}\n`)
+        writeLine(`[stdout] ${trimmed}`)
 
         if (trimmed.startsWith(TRACK_PREFIX)) {
           try {
@@ -172,7 +177,7 @@ export function download(
         const trimmed = line.trim()
         if (!trimmed) continue
 
-        logStream.write(`[stderr] ${trimmed}\n`)
+        writeLine(`[stderr] ${trimmed}`)
 
         if (/429|Too Many Requests/i.test(trimmed)) {
           rateLimitedAt = Date.now()
@@ -199,7 +204,7 @@ export function download(
     })
 
     proc.on('close', (code) => {
-      logStream.write(`[exit] code ${code}\n`)
+      writeLine(`[exit] code ${code}`)
       logStream.end()
       if (code === 0) {
         onProgress({ status: 'done', message: 'Download complete' })
@@ -212,10 +217,12 @@ export function download(
     })
 
     proc.on('error', (err) => {
-      logStream.write(`[error] ${err.message}\n`)
+      writeLine(`[error] ${err.message}`)
       logStream.end()
       onProgress({ status: 'error', message: err.message })
       reject(err)
     })
   })
+
+  return { promise, logPath }
 }

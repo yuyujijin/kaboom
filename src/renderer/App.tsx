@@ -8,6 +8,7 @@ import { DownloadStatus } from './components/download/DownloadStatus'
 import { RateLimitAlert } from './components/download/RateLimitAlert'
 import { TrackList } from './components/track/TrackList'
 import { useRateLimit } from './hooks/use-rate-limit'
+import { LogDrawer } from './components/LogDrawer'
 
 declare global {
   interface Window {
@@ -17,6 +18,9 @@ declare global {
       onProgress: (callback: (progress: DownloadProgress) => void) => () => void
       openFolder: (path: string) => Promise<void>
       showItemInFolder: (path: string) => Promise<void>
+      readLog: (path: string) => Promise<string>
+      onLogLine: (callback: (line: string) => void) => () => void
+      onDownloadStarted: (callback: (logPath: string) => void) => () => void
     }
   }
 }
@@ -28,6 +32,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [tracks, setTracks] = useState<{ info: TrackInfo; percent?: number; done?: boolean }[]>([])
   const [outputDir, setOutputDir] = useState<string | null>(null)
+  const [logPath, setLogPath] = useState<string | null>(null)
 
   const { isRateLimited, rateLimit, setRateLimit } = useRateLimit(loading)
 
@@ -41,6 +46,11 @@ function App() {
     setLoading(true)
     setStatus(null)
     setTracks([])
+
+    const cleanupStarted = window.api.onDownloadStarted((lp) => {
+      setLogPath(lp)
+      cleanupStarted()
+    })
 
     const cleanup = window.api.onProgress((progress) => {
       if (progress.trackInfo) {
@@ -79,6 +89,7 @@ function App() {
 
   return (
     <div className="relative flex h-screen flex-col items-center bg-background text-foreground overflow-hidden">
+      <LogDrawer logPath={logPath} />
       <OrangeGlow />
       <NoiseOverlay />
       {/* Sticky top section — form + status */}
