@@ -13,7 +13,9 @@ function createWindow(): BrowserWindow {
     }
   })
 
+
   if (process.env.NODE_ENV === 'development') {
+    win.webContents.openDevTools();
     win.loadURL(process.env['ELECTRON_RENDERER_URL']!)
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'))

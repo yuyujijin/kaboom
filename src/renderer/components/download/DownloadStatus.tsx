@@ -7,7 +7,9 @@ interface DownloadStatusProps {
 }
 
 export function DownloadStatus({ status }: DownloadStatusProps) {
-  const isRateLimited = status.rateLimitedAt != null && status.retryAttempt != null
+  const isRateLimited = status.rateLimitedAt != null
+
+  console.log(status);
 
   return (
     <div className="w-full space-y-3">

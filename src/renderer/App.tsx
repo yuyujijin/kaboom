@@ -49,9 +49,9 @@ function App() {
   const showStatus = status != null && (loading || status.status === 'error')
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-background text-foreground">
-      {/* Top section — form + status */}
-      <div className="w-full max-w-2xl px-6 pt-12 pb-8 space-y-4">
+    <div className="flex h-screen flex-col items-center bg-background text-foreground">
+      {/* Sticky top section — form + status */}
+      <div className="w-full max-w-2xl px-6 pt-12 pb-8 space-y-4 shrink-0">
         <h1 className="text-center text-2xl font-bold tracking-tight">Kaboom</h1>
         <DownloadForm
           url={url}
@@ -64,8 +64,8 @@ function App() {
         {showStatus && <DownloadStatus status={status} />}
       </div>
 
-      {/* Downloaded tracks */}
-      <div className="w-full max-w-2xl px-6 pb-8">
+      {/* Scrollable track list */}
+      <div className="w-full max-w-2xl flex-1 overflow-y-auto px-6 pb-8">
         <TrackList tracks={tracks} />
       </div>
     </div>

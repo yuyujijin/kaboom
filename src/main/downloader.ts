@@ -110,6 +110,7 @@ export function download(
       '--print', TRACK_PRINT_TEMPLATE,
       '--newline',
       '--progress-template', PROGRESS_TEMPLATE,
+      '--force-ipv4',
       '-o', join(outputDir, '%(title)s.%(ext)s'),
       url
     ]
@@ -120,7 +121,7 @@ export function download(
     let retryAttempt: number | undefined
     let warning: string | undefined
 
-    const retryRe = /Retrying \(attempt (\d+) of (\d+)\)/
+    const retryRe = /Retrying \((\d+)\/(\d+)\)/
     const credentialsRe = /Original download format is only available for registered users/
 
     proc.stdout.on('data', (data: Buffer) => {
