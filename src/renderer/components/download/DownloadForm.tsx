@@ -53,11 +53,11 @@ export function DownloadForm({
         disabled={disabled}
       >
         <SelectTrigger className="w-32">
-          <SelectValue />
+          <SelectValue className="capitalize" />
         </SelectTrigger>
         <SelectContent>
           {BROWSERS.map((b) => (
-            <SelectItem key={b} value={b}>
+            <SelectItem key={b} value={b} className="capitalize" >
               {b}
             </SelectItem>
           ))}

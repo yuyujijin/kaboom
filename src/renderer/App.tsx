@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Info } from 'lucide-react'
 import type { CookiesBrowser, DownloadProgress, TrackInfo } from '../shared/types'
 import { NoiseOverlay } from './components/ui/NoiseOverlay'
 import { OrangeGlow } from './components/ui/OrangeGlow'
@@ -81,8 +82,16 @@ function App() {
       <OrangeGlow />
       <NoiseOverlay />
       {/* Sticky top section — form + status */}
-      <div className="w-full max-w-2xl px-6 pt-12 pb-8 space-y-4 shrink-0">
-        <h1 className="text-center text-2xl font-bold tracking-tight">Kaboom</h1>
+      <div className="flex flex-col w-full max-w-2xl px-6 pt-12 pb-8 space-y-4 shrink-0 items-center">
+        <h1 className="text-center text-2xl font-bold tracking-tight">🧨 Kaboom</h1>
+        <div className="w-4/5 space-y-2">
+          <p className="text-center text-sm text-muted-foreground">
+            Paste a SoundCloud track or playlist URL and Kaboom will download it as MP3.
+          </p>
+          <p className="text-center text-xs text-muted-foreground">
+            <Info className="inline-block mr-1 mb-0.5 h-3.5 w-3.5 shrink-0" />It reads cookies from your browser to access tracks that require a SoundCloud login — nothing is stored or sent anywhere.
+          </p>
+        </div>
         <DownloadForm
           url={url}
           browser={browser}
