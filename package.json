@@ -16,7 +16,53 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "dist": "electron-vite build && electron-builder --publish always",
+    "dist:mac": "electron-vite build && electron-builder --mac --publish always",
+    "dist:win": "electron-vite build && electron-builder --win --publish always",
+    "dist:linux": "electron-vite build && electron-builder --linux --publish always",
     "postinstall": "node scripts/download-ytdlp.mjs"
+  },
+  "build": {
+    "appId": "com.eugenevalty.kaboom",
+    "productName": "Kaboom",
+    "icon": "build/icon.png",
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "yuyujijin",
+      "repo": "kaboom"
+    },
+    "mac": {
+      "identity": null,
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "extraResources": [
+        { "from": "node_modules/ffmpeg-static/ffmpeg", "to": "ffmpeg" },
+        { "from": "node_modules/ffprobe-static/bin/darwin/${arch}/ffprobe", "to": "ffprobe" },
+        { "from": "resources/yt-dlp", "to": "yt-dlp" }
+      ]
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "extraResources": [
+        { "from": "node_modules/ffmpeg-static/ffmpeg.exe", "to": "ffmpeg.exe" },
+        { "from": "node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe", "to": "ffprobe.exe" },
+        { "from": "resources/yt-dlp.exe", "to": "yt-dlp.exe" }
+      ]
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "extraResources": [
+        { "from": "node_modules/ffmpeg-static/ffmpeg", "to": "ffmpeg" },
+        { "from": "node_modules/ffprobe-static/bin/linux/x64/ffprobe", "to": "ffprobe" },
+        { "from": "resources/yt-dlp", "to": "yt-dlp" }
+      ]
+    }
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -41,6 +87,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.0",
     "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
     "electron-vite": "^2.3.0",
     "typescript": "^5.5.0",
     "vite": "^5.4.0"
