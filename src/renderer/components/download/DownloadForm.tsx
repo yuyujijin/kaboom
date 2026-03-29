@@ -52,8 +52,8 @@ export function DownloadForm({
         onValueChange={(v) => onBrowserChange(v as CookiesBrowser)}
         disabled={disabled}
       >
-        <SelectTrigger className="w-32">
-          <SelectValue className="capitalize" />
+        <SelectTrigger className="w-32 capitalize">
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {BROWSERS.map((b) => (
