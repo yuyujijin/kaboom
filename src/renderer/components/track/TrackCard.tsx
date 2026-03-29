@@ -7,13 +7,17 @@ interface TrackCardProps {
   track: TrackInfo
   percent?: number
   done?: boolean
+  filePath?: string
 }
 
-export function TrackCard({ track, percent, done }: TrackCardProps) {
+export function TrackCard({ track, percent, done, filePath }: TrackCardProps) {
   const showIndicator = percent != null || done
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+    <div
+      className={cn("flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5", filePath && "cursor-pointer hover:bg-accent transition-colors")}
+      onClick={filePath ? () => window.api.showItemInFolder(filePath) : undefined}
+    >
       {track.thumbnail ? (
         <img
           src={track.thumbnail}

@@ -2,7 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { CookiesBrowser, DownloadProgress } from '../shared/types'
 
 contextBridge.exposeInMainWorld('api', {
-  download: (url: string, browser: CookiesBrowser): Promise<string | undefined> => ipcRenderer.invoke('download', url, browser),
+  chooseFolder: (): Promise<string | undefined> => ipcRenderer.invoke('choose-folder'),
+  download: (url: string, browser: CookiesBrowser, dir: string): Promise<void> => ipcRenderer.invoke('download', url, browser, dir),
 
   onProgress: (callback: (progress: DownloadProgress) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, progress: DownloadProgress) => callback(progress)
@@ -11,4 +12,5 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   openFolder: (path: string): Promise<void> => ipcRenderer.invoke('open-folder', path),
+  showItemInFolder: (path: string): Promise<void> => ipcRenderer.invoke('show-item-in-folder', path),
 })

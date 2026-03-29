@@ -27,20 +27,23 @@ function createWindow(): BrowserWindow {
 app.whenReady().then(() => {
   const win = createWindow()
 
-  ipcMain.handle('download', async (_, url: string, browser: import('../shared/types').CookiesBrowser) => {
+  ipcMain.handle('choose-folder', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
       title: 'Choose download folder',
       properties: ['openDirectory', 'createDirectory'],
     })
-    if (canceled || filePaths.length === 0) return
-
-    await download(url, browser, filePaths[0], (progress) => {
-      win.webContents.send('download:progress', progress)
-    })
+    if (canceled || filePaths.length === 0) return undefined
     return filePaths[0]
   })
 
+  ipcMain.handle('download', async (_, url: string, browser: import('../shared/types').CookiesBrowser, dir: string) => {
+    await download(url, browser, dir, (progress) => {
+      win.webContents.send('download:progress', progress)
+    })
+  })
+
   ipcMain.handle('open-folder', (_, path: string) => shell.openPath(path))
+  ipcMain.handle('show-item-in-folder', (_, path: string) => shell.showItemInFolder(path))
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

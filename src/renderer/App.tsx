@@ -9,9 +9,11 @@ import { useRateLimit } from './hooks/use-rate-limit'
 declare global {
   interface Window {
     api: {
-      download: (url: string, browser: CookiesBrowser) => Promise<string | undefined>
+      chooseFolder: () => Promise<string | undefined>
+      download: (url: string, browser: CookiesBrowser, dir: string) => Promise<void>
       onProgress: (callback: (progress: DownloadProgress) => void) => () => void
       openFolder: (path: string) => Promise<void>
+      showItemInFolder: (path: string) => Promise<void>
     }
   }
 }
@@ -29,6 +31,10 @@ function App() {
   const handleDownload = async () => {
     if (!url.trim() || loading) return
 
+    const dir = await window.api.chooseFolder()
+    if (!dir) return
+
+    setOutputDir(dir)
     setLoading(true)
     setStatus(null)
     setTracks([])
@@ -59,8 +65,7 @@ function App() {
     })
 
     try {
-      const dir = await window.api.download(url, browser)
-      if (dir) setOutputDir(dir)
+      await window.api.download(url, browser, dir)
     } catch {
       setLoading(false)
       cleanup()
@@ -100,7 +105,7 @@ function App() {
 
       {/* Scrollable track list */}
       <div className="w-full max-w-2xl flex-1 overflow-y-auto px-6 pb-8">
-        <TrackList tracks={tracks} />
+        <TrackList tracks={tracks} outputDir={outputDir} />
       </div>
     </div>
   )
