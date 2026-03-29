@@ -103,9 +103,7 @@ export function download(
     const args = [
       '--cookies-from-browser', browser,
       '--ffmpeg-location', getToolsDir(),
-      '-f', 'bestaudio',
-      '-x',
-      '--audio-format', 'mp3',
+      '-f', 'bestaudio[acodec=aac]/bestaudio',
       '--retries', String(RETRY_MAX),
       '--extractor-retries', String(RETRY_MAX),
       '--retry-sleep', `http:${RETRY_SLEEP_SECONDS}`,

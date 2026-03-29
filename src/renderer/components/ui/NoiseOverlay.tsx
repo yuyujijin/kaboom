@@ -8,7 +8,6 @@ export function NoiseOverlay() {
         backgroundImage: `url(${noiseTexture})`,
         backgroundRepeat: 'repeat',
         backgroundSize: '75px 75px',
-        mixBlendMode: 'lighten',
         opacity: .2,
       }}
     />
