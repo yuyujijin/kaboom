@@ -1,6 +1,7 @@
-import { AlertTriangle, Clock, XCircle } from 'lucide-react'
+import { AlertTriangle, XCircle } from 'lucide-react'
 import type { DownloadProgress } from '../../../shared/types'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
+import { RateLimitAlert } from './RateLimitAlert'
 
 interface DownloadStatusProps {
   status: DownloadProgress
@@ -30,17 +31,11 @@ export function DownloadStatus({ status }: DownloadStatusProps) {
 
       {/* Rate limit banner */}
       {isRateLimited && (
-        <Alert variant="warning">
-          <Clock className="h-4 w-4" />
-          <AlertTitle>SoundCloud is slowing us down</AlertTitle>
-          <AlertDescription>
-            Too many requests — waiting before retrying. Attempt{' '}
-            <span className="font-medium">
-              {status.retryAttempt} of {status.maxRetries}
-            </span>
-            .
-          </AlertDescription>
-        </Alert>
+        <RateLimitAlert
+          rateLimitedAt={status.rateLimitedAt!}
+          retryAttempt={status.retryAttempt}
+          maxRetries={status.maxRetries}
+        />
       )}
 
       {/* Non-fatal warning banner */}

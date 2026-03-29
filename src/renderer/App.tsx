@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CookiesBrowser, DownloadProgress, TrackInfo } from '../shared/types'
 import { DownloadForm } from './components/download/DownloadForm'
 import { DownloadStatus } from './components/download/DownloadStatus'
+import { RateLimitAlert } from './components/download/RateLimitAlert'
 import { TrackList } from './components/track/TrackList'
+import { useLocalStorage } from './hooks/local-storage'
 
 declare global {
   interface Window {
@@ -16,6 +18,7 @@ declare global {
 
 function App() {
   const [url, setUrl] = useState('')
+  const { value: rateLimit, setValue: setRateLimit } = useLocalStorage<{ rateLimitedAt: number; retryAttempt?: number; maxRetries?: number }>('soundcloud-rate-limit')
   const [browser, setBrowser] = useState<CookiesBrowser>('chrome')
   const [status, setStatus] = useState<DownloadProgress | null>(null)
   const [loading, setLoading] = useState(false)
@@ -38,6 +41,7 @@ function App() {
           prev.map((t, i) => (i === idx ? { ...t, percent: progress.percent } : t))
         )
       }
+      if (progress.rateLimitedAt != null) setRateLimit({ rateLimitedAt: progress.rateLimitedAt, retryAttempt: progress.retryAttempt, maxRetries: progress.maxRetries })
       setStatus(progress)
       if (progress.status === 'done' || progress.status === 'error') {
         setLoading(false)
@@ -56,6 +60,22 @@ function App() {
 
   const showStatus = status != null && (loading || status.status === 'error')
 
+  const checkRateLimited = () =>
+    !loading && rateLimit != null && Date.now() < rateLimit.rateLimitedAt + 600_000
+
+  const [isRateLimited, setIsRateLimited] = useState(checkRateLimited)
+
+  useEffect(() => {
+    setIsRateLimited(checkRateLimited())
+    if (!checkRateLimited()) return
+    const id = setInterval(() => {
+      const still = checkRateLimited()
+      setIsRateLimited(still)
+      if (!still) clearInterval(id)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [rateLimit, loading])
+
   return (
     <div className="flex h-screen flex-col items-center bg-background text-foreground">
       {/* Sticky top section — form + status */}
@@ -65,6 +85,7 @@ function App() {
           url={url}
           browser={browser}
           loading={loading}
+          rateLimited={isRateLimited}
           onUrlChange={setUrl}
           onBrowserChange={setBrowser}
           onSubmit={handleDownload}
@@ -79,6 +100,9 @@ function App() {
           </button>
         )}
         {showStatus && <DownloadStatus status={status} />}
+        {!loading && !showStatus && rateLimit != null && (
+          <RateLimitAlert rateLimitedAt={rateLimit.rateLimitedAt} />
+        )}
       </div>
 
       {/* Scrollable track list */}

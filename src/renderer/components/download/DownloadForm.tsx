@@ -3,6 +3,7 @@ import type { CookiesBrowser } from '../../../shared/types'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { cn } from '../../lib/utils'
 
 const BROWSERS: CookiesBrowser[] = [
   'chrome',
@@ -19,6 +20,7 @@ interface DownloadFormProps {
   url: string
   browser: CookiesBrowser
   loading: boolean
+  rateLimited: boolean
   onUrlChange: (url: string) => void
   onBrowserChange: (browser: CookiesBrowser) => void
   onSubmit: () => void
@@ -28,10 +30,13 @@ export function DownloadForm({
   url,
   browser,
   loading,
+  rateLimited,
   onUrlChange,
   onBrowserChange,
   onSubmit,
 }: DownloadFormProps) {
+  const disabled = loading || rateLimited
+
   return (
     <div className="flex w-full gap-2 sticky top-0">
       <Input
@@ -39,13 +44,13 @@ export function DownloadForm({
         placeholder="SoundCloud URL..."
         value={url}
         onChange={(e) => onUrlChange(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
-        disabled={loading}
+        onKeyDown={(e) => e.key === 'Enter' && !disabled && onSubmit()}
+        disabled={disabled}
       />
       <Select
         value={browser}
         onValueChange={(v) => onBrowserChange(v as CookiesBrowser)}
-        disabled={loading}
+        disabled={disabled}
       >
         <SelectTrigger className="w-32">
           <SelectValue />
@@ -58,7 +63,7 @@ export function DownloadForm({
           ))}
         </SelectContent>
       </Select>
-      <Button onClick={onSubmit} disabled={loading || !url.trim()}>
+      <Button onClick={onSubmit} disabled={disabled || !url.trim()}>
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
