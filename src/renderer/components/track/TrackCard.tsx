@@ -1,17 +1,16 @@
-import { Music } from 'lucide-react'
+import { Check, Loader2, Music } from 'lucide-react'
 import type { TrackInfo } from '../../../shared/types'
 import { formatDuration } from '../../lib/format'
+import { cn } from '../../lib/utils'
 
 interface TrackCardProps {
   track: TrackInfo
   percent?: number
-  allDone?: boolean
+  done?: boolean
 }
 
-export function TrackCard({ track, percent, allDone }: TrackCardProps) {
-  const showBar = percent != null
-  const barWidth = allDone ? 100 : percent ?? 0
-  const barColor = allDone ? 'bg-muted-foreground' : 'bg-primary'
+export function TrackCard({ track, percent, done }: TrackCardProps) {
+  const showIndicator = percent != null || done
 
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
@@ -31,15 +30,19 @@ export function TrackCard({ track, percent, allDone }: TrackCardProps) {
         <p className="truncate text-xs text-muted-foreground">
           {track.author} &middot; {formatDuration(track.duration)}
         </p>
-        {showBar && (
-          <div className="mt-1.5 w-full bg-secondary rounded-full h-1">
-            <div
-              className={`${barColor} h-1 rounded-full transition-all duration-300`}
-              style={{ width: `${barWidth}%` }}
-            />
-          </div>
-        )}
       </div>
+      {showIndicator && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={cn("text-xs text-muted-foreground", { "text-green-700": done})}>
+            {percent}%
+          </span>
+          {done ? (
+            <Check className="h-4 w-4 text-green-700" />
+          ) : (
+            <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+          )}
+        </div>
+      )}
     </div>
   )
 }
