@@ -5,6 +5,7 @@ import { NoiseOverlay } from './components/ui/NoiseOverlay'
 import { OrangeGlow } from './components/ui/OrangeGlow'
 import { DownloadForm } from './components/download/DownloadForm'
 import { DownloadStatus } from './components/download/DownloadStatus'
+import { IdentificationLight } from './components/download/IdentificationLight'
 import { RateLimitAlert } from './components/download/RateLimitAlert'
 import { TrackList } from './components/track/TrackList'
 import { useRateLimit } from './hooks/use-rate-limit'
@@ -33,6 +34,8 @@ function App() {
   const [tracks, setTracks] = useState<{ info: TrackInfo; percent?: number; done?: boolean }[]>([])
   const [outputDir, setOutputDir] = useState<string | null>(null)
   const [logPath, setLogPath] = useState<string | null>(null)
+  // Last known identification result (undefined until a download reports it).
+  const [identified, setIdentified] = useState<boolean | undefined>(undefined)
 
   const { isRateLimited, rateLimit, setRateLimit } = useRateLimit(loading)
 
@@ -46,6 +49,7 @@ function App() {
     setLoading(true)
     setStatus(null)
     setTracks([])
+    setIdentified(undefined)
 
     const cleanupStarted = window.api.onDownloadStarted((lp) => {
       setLogPath(lp)
@@ -67,6 +71,7 @@ function App() {
           prev.map((t, i) => (i === idx ? { ...t, percent: progress.percent } : t))
         )
       }
+      if (progress.identified != null) setIdentified(progress.identified)
       if (progress.rateLimitedAt != null) setRateLimit({ rateLimitedAt: progress.rateLimitedAt, retryAttempt: progress.retryAttempt, maxRetries: progress.maxRetries })
       // Merge to avoid flicker when a trackInfo event (no percent) arrives between tracks
       setStatus((prev) => (prev ? { ...prev, ...progress } : progress))
@@ -100,7 +105,7 @@ function App() {
             Paste a SoundCloud track or playlist URL and Kaboom will download it as MP3.
           </p>
           <p className="text-center text-xs text-muted-foreground">
-            <Info className="inline-block mr-1 mb-0.5 h-3.5 w-3.5 shrink-0" />It reads cookies from your browser to access tracks that require a SoundCloud login — nothing is stored or sent anywhere.
+            <Info className="inline-block mr-1 mb-0.5 h-3.5 w-3.5 shrink-0" />It reads cookies from your browser to access tracks that require a SoundCloud login and unlock 320 kbps — nothing is stored or sent anywhere.
           </p>
         </div>
         <DownloadForm
@@ -112,6 +117,7 @@ function App() {
           onBrowserChange={setBrowser}
           onSubmit={handleDownload}
         />
+        <IdentificationLight identified={identified} />
         {outputDir && (
           <button
             onClick={() => window.api.openFolder(outputDir)}
