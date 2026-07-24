@@ -3,3 +3,4 @@ out
 dist
 resources/yt-dlp
 resources/yt-dlp.exe
+tsconfig.web.tsbuildinfo

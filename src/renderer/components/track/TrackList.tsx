@@ -2,11 +2,10 @@ import type { TrackInfo } from '../../../shared/types'
 import { TrackCard } from './TrackCard'
 
 interface TrackListProps {
-  tracks: { info: TrackInfo; percent?: number; done?: boolean }[]
-  outputDir: string | null
+  tracks: { info: TrackInfo; percent?: number; done?: boolean; filePath?: string }[]
 }
 
-export function TrackList({ tracks, outputDir }: TrackListProps) {
+export function TrackList({ tracks }: TrackListProps) {
   if (tracks.length === 0) return null
 
   return (
@@ -17,7 +16,7 @@ export function TrackList({ tracks, outputDir }: TrackListProps) {
           track={track.info}
           percent={track.percent}
           done={track.done}
-          filePath={outputDir && track.done ? `${outputDir}/${track.info.title}.mp3` : undefined}
+          filePath={track.filePath}
         />
       ))}
     </div>
