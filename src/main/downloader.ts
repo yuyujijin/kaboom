@@ -27,6 +27,12 @@ const TRACK_PRINT_TEMPLATE =
   `"duration":%(duration|0)s,` +
   `"thumbnail":%(thumbnail)j}`
 
+// Final file path emitted by yt-dlp via --print after_move (the extension
+// depends on the selected format, so we can't reconstruct it in the renderer).
+const FILEPATH_PREFIX = 'kaboom-filepath:'
+
+const FILEPATH_PRINT_TEMPLATE = `${FILEPATH_PREFIX}%(filepath)s`
+
 interface YtDlpProgress {
   downloaded: number
   total: number
@@ -111,6 +117,7 @@ export function download(
       '--embed-metadata',
       '--embed-thumbnail',
       '--print', TRACK_PRINT_TEMPLATE,
+      '--print', `after_move:${FILEPATH_PRINT_TEMPLATE}`,
       '--newline',
       '--progress',
       '--progress-template', PROGRESS_TEMPLATE,
@@ -126,9 +133,11 @@ export function download(
     let rateLimitedAt: number | undefined
     let retryAttempt: number | undefined
     let warning: string | undefined
+    let identified: boolean | undefined
 
     const retryRe = /Retrying \((\d+)\/(\d+)\)/
-    const credentialsRe = /Original download format is only available for registered users/
+    const credentialsRe = /Original download format is only available for registered users|WARNING: find-generic-password failed/
+    const loggingInRe = /\[soundcloud\] Logging in/
 
     proc.stdout.on('data', (data: Buffer) => {
       for (const line of data.toString().split('\n')) {
@@ -137,6 +146,10 @@ export function download(
 
         writeLine(`[stdout] ${trimmed}`)
 
+        if(loggingInRe.test(trimmed)) {
+          identified = true;
+        }
+
         if (trimmed.startsWith(TRACK_PREFIX)) {
           try {
             const trackInfo: TrackInfo = JSON.parse(trimmed.slice(TRACK_PREFIX.length))
@@ -144,6 +157,15 @@ export function download(
           } catch {
             // malformed track line — ignore
           }
+          continue
+        }
+
+        if (trimmed.startsWith(FILEPATH_PREFIX)) {
+          onProgress({
+            status: 'downloading',
+            message: trimmed,
+            filePath: trimmed.slice(FILEPATH_PREFIX.length),
+          })
           continue
         }
 
@@ -163,6 +185,7 @@ export function download(
             retryAttempt,
             maxRetries: RETRY_MAX,
             warning,
+            identified,
           })
         } catch {
           // malformed progress line — ignore
@@ -188,6 +211,7 @@ export function download(
 
         if (credentialsRe.test(trimmed)) {
           warning = 'Not logged in to SoundCloud — downloading at lower quality'
+          identified = false;
         }
 
         onProgress({
@@ -197,6 +221,7 @@ export function download(
           retryAttempt,
           maxRetries: RETRY_MAX,
           warning,
+          identified,
         })
       }
     })
@@ -205,7 +230,7 @@ export function download(
       writeLine(`[exit] code ${code}`)
       logStream.end()
       if (code === 0) {
-        onProgress({ status: 'done', message: 'Download complete' })
+        onProgress({ status: 'done', message: 'Download complete', identified })
         resolve()
       } else {
         const err = `yt-dlp exited with code ${code}`
