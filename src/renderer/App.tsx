@@ -30,7 +30,7 @@ function App() {
   const [browser, setBrowser] = useState<CookiesBrowser>('chrome')
   const [status, setStatus] = useState<DownloadProgress | null>(null)
   const [loading, setLoading] = useState(false)
-  const [tracks, setTracks] = useState<{ info: TrackInfo; percent?: number; done?: boolean }[]>([])
+  const [tracks, setTracks] = useState<{ info: TrackInfo; percent?: number; done?: boolean; filePath?: string }[]>([])
   const [outputDir, setOutputDir] = useState<string | null>(null)
   const [logPath, setLogPath] = useState<string | null>(null)
 
@@ -61,6 +61,12 @@ function App() {
             : prev
           return [...updated, { info: progress.trackInfo! }]
         })
+      } else if (progress.filePath) {
+        // after_move fires once the just-finished track is written to disk —
+        // attach the real path (with its actual extension) to the last track.
+        setTracks((prev) =>
+          prev.map((t, i) => (i === prev.length - 1 ? { ...t, filePath: progress.filePath, done: true } : t))
+        )
       } else if (progress.percent != null) {
         const idx = progress.current && progress.current > 0 ? progress.current - 1 : 0
         setTracks((prev) =>
@@ -129,7 +135,7 @@ function App() {
 
       {/* Scrollable track list */}
       <div className="w-full max-w-2xl flex-1 overflow-y-auto px-6 pb-8">
-        <TrackList tracks={tracks} outputDir={outputDir} />
+        <TrackList tracks={tracks} />
       </div>
     </div>
   )

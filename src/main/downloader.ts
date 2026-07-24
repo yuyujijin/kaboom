@@ -27,6 +27,12 @@ const TRACK_PRINT_TEMPLATE =
   `"duration":%(duration|0)s,` +
   `"thumbnail":%(thumbnail)j}`
 
+// Final file path emitted by yt-dlp via --print after_move (the extension
+// depends on the selected format, so we can't reconstruct it in the renderer).
+const FILEPATH_PREFIX = 'kaboom-filepath:'
+
+const FILEPATH_PRINT_TEMPLATE = `${FILEPATH_PREFIX}%(filepath)s`
+
 interface YtDlpProgress {
   downloaded: number
   total: number
@@ -111,6 +117,7 @@ export function download(
       '--embed-metadata',
       '--embed-thumbnail',
       '--print', TRACK_PRINT_TEMPLATE,
+      '--print', `after_move:${FILEPATH_PRINT_TEMPLATE}`,
       '--newline',
       '--progress',
       '--progress-template', PROGRESS_TEMPLATE,
@@ -144,6 +151,15 @@ export function download(
           } catch {
             // malformed track line — ignore
           }
+          continue
+        }
+
+        if (trimmed.startsWith(FILEPATH_PREFIX)) {
+          onProgress({
+            status: 'downloading',
+            message: trimmed,
+            filePath: trimmed.slice(FILEPATH_PREFIX.length),
+          })
           continue
         }
 

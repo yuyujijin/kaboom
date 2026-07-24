@@ -28,4 +28,6 @@ export interface DownloadProgress {
   warning?: string
   /** Metadata for the track that is about to be downloaded */
   trackInfo?: TrackInfo
+  /** Absolute path of a track's final file, reported once it has been written */
+  filePath?: string
 }
