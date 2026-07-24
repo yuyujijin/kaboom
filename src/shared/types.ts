@@ -26,6 +26,12 @@ export interface DownloadProgress {
   maxRetries?: number
   /** Non-fatal warning to surface in the UI (e.g. missing credentials) */
   warning?: string
+  /**
+   * Whether the user was successfully identified to SoundCloud (320 kbps unlocked).
+   * Optimistically true once a download starts; flips to false if yt-dlp reports the
+   * original format is only available to registered users. Undefined until known.
+   */
+  identified?: boolean
   /** Metadata for the track that is about to be downloaded */
   trackInfo?: TrackInfo
   /** Absolute path of a track's final file, reported once it has been written */

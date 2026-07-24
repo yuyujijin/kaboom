@@ -133,9 +133,11 @@ export function download(
     let rateLimitedAt: number | undefined
     let retryAttempt: number | undefined
     let warning: string | undefined
+    let identified: boolean | undefined
 
     const retryRe = /Retrying \((\d+)\/(\d+)\)/
-    const credentialsRe = /Original download format is only available for registered users/
+    const credentialsRe = /Original download format is only available for registered users|WARNING: find-generic-password failed/
+    const loggingInRe = /\[soundcloud\] Logging in/
 
     proc.stdout.on('data', (data: Buffer) => {
       for (const line of data.toString().split('\n')) {
@@ -143,6 +145,10 @@ export function download(
         if (!trimmed) continue
 
         writeLine(`[stdout] ${trimmed}`)
+
+        if(loggingInRe.test(trimmed)) {
+          identified = true;
+        }
 
         if (trimmed.startsWith(TRACK_PREFIX)) {
           try {
@@ -179,6 +185,7 @@ export function download(
             retryAttempt,
             maxRetries: RETRY_MAX,
             warning,
+            identified,
           })
         } catch {
           // malformed progress line — ignore
@@ -204,6 +211,7 @@ export function download(
 
         if (credentialsRe.test(trimmed)) {
           warning = 'Not logged in to SoundCloud — downloading at lower quality'
+          identified = false;
         }
 
         onProgress({
@@ -213,6 +221,7 @@ export function download(
           retryAttempt,
           maxRetries: RETRY_MAX,
           warning,
+          identified,
         })
       }
     })
@@ -221,7 +230,7 @@ export function download(
       writeLine(`[exit] code ${code}`)
       logStream.end()
       if (code === 0) {
-        onProgress({ status: 'done', message: 'Download complete' })
+        onProgress({ status: 'done', message: 'Download complete', identified })
         resolve()
       } else {
         const err = `yt-dlp exited with code ${code}`

@@ -3,7 +3,6 @@ import type { CookiesBrowser } from '../../../shared/types'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { cn } from '../../lib/utils'
 
 const BROWSERS: CookiesBrowser[] = [
   'chrome',
